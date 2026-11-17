@@ -3,6 +3,19 @@
 > Nối tiếp Lab 8. Lab 8 trả lời "agent có chạy không"; Lab 9 trả lời **"làm sao biết bản mới tốt hơn — và chặn được bản tệ trước khi merge"**.
 > Không cần API key: MockLLM + judge replay. **Không Langfuse / OTel** (observability học ở Day 14).
 
+## Bản làm bài của Nguyễn Thị Thanh Bình — 03497
+
+Repo này đã tích hợp bản sao runtime/dữ liệu Day 8 để chạy độc lập. `src/lab8/` được giữ nguyên từ repo Day 8; phần triển khai bài tập nằm trong `src/lab9/`.
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements-lock.txt
+python scripts/verify_day9.py
+```
+
+Report được sinh bằng harness trong `src/reports/`; kết quả kiểm tra đầy đủ ở `src/reports/verification.txt`. Xem `docs/eval_card.md`, `docs/failure_taxonomy.md`, `docs/judge_audit.md`, `docs/trace_case.md`, `docs/PRD_v1.1.md` và `docs/PR_DESCRIPTION.md` để review/nộp bài. Các hướng dẫn overlay bên dưới là đề gốc, không cần thực hiện lại trên repo đã tích hợp này.
+
 ## Bạn sẽ làm gì (13:30–17:00 trên lớp, nộp muộn nhất 23:59 cùng ngày)
 | M | Giờ | Việc | Lệnh kiểm tra |
 |---|---|---|---|

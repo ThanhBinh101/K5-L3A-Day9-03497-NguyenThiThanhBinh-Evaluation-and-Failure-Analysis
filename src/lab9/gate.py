@@ -33,8 +33,62 @@ def integrity_check(pr: dict, base: dict, spec: dict, base_spec: dict | None = N
         including dropping no_significant_drop)
       - an item's slice tags in PR rows differ from the baseline's (relabelling an item out of a
         slice hides its regression from the slice gate)"""
-    # TODO M7
-    return []
+    import math
+    from lab9.graders import GRADERS
+    problems = []
+    for name, report in (("PR", pr), ("baseline", base)):
+        manifest, rows = report.get("manifest", {}), report.get("rows", [])
+        seeds = manifest.get("seeds", [])
+        pairs = [(r.get("item_id"), r.get("seed")) for r in rows]
+        ids = {i for i, _ in pairs}
+        if (len(rows) != manifest.get("items", 0) * len(seeds) or len(set(pairs)) != len(pairs)
+                or len(ids) != manifest.get("items") or len(set(seeds)) != len(seeds)
+                or set(pairs) != {(i, seed) for i in ids for seed in seeds}):
+            problems.append(f"{name}: incomplete or duplicate item/seed grid")
+        if report.get("evaluator_failures"):
+            problems.append(f"{name}: evaluator failures")
+        for mid, value in report.get("metrics", {}).items():
+            if value is None or not isinstance(value, (int, float)) or not math.isfinite(value):
+                problems.append(f"{name}: invalid aggregate {mid}")
+        for metric in spec["metrics"]:
+            mid = metric["id"]
+            if mid not in report.get("metrics", {}):
+                problems.append(f"{name}: missing aggregate {mid}")
+            if mid in GRADERS:
+                if any(not isinstance(r.get(mid), (bool, int, float)) or not math.isfinite(r[mid]) for r in rows):
+                    problems.append(f"{name}: missing/nonfinite row metric {mid}")
+    pr_pairs = {(r.get("item_id"), r.get("seed")) for r in pr.get("rows", [])}
+    base_pairs = {(r.get("item_id"), r.get("seed")) for r in base.get("rows", [])}
+    if pr_pairs != base_pairs:
+        problems.append("PR and baseline item/seed sets differ")
+    tags = {(r["item_id"], r["seed"]): set(r.get("slices") or []) for r in base.get("rows", [])}
+    if any(set(r.get("slices") or []) != tags.get((r["item_id"], r["seed"])) for r in pr.get("rows", [])):
+        problems.append("slice tags differ from baseline")
+    if base_spec and spec.get("eval_set_version") == base_spec.get("eval_set_version"):
+        for section in ("metrics", "slices"):
+            key = lambda m: m["id"] if section == "metrics" else (m["name"], m["metric"])
+            current = {key(m): m for m in spec.get(section, [])}
+            for old in base_spec.get(section, []):
+                ident = key(old)
+                new = current.get(ident)
+                if new is None:
+                    problems.append(f"ratchet: removed {section} {ident}")
+                    continue
+                if old.get("blocking") and not new.get("blocking"):
+                    problems.append(f"ratchet: unblocked {ident}")
+                before = old.get("threshold", {}) if section == "metrics" else old
+                after = new.get("threshold", {}) if section == "metrics" else new
+                for field in ("min", "max", "max_increase", "no_significant_drop"):
+                    if field not in before:
+                        continue
+                    loosened = field not in after
+                    if not loosened:
+                        loosened = (after[field] < before[field] if field == "min" else
+                                    bool(before[field]) and not after[field] if field == "no_significant_drop" else
+                                    after[field] > before[field])
+                    if loosened:
+                        problems.append(f"ratchet: loosened {ident}/{field}")
+    return problems
 
 
 def slice_check(pr: dict, base: dict, spec: dict) -> tuple[list[str], list[str]]:
@@ -44,8 +98,28 @@ def slice_check(pr: dict, base: dict, spec: dict) -> tuple[list[str], list[str]]
       - fail if below "min", or if no_significant_drop and the paired CI over the slice's items
         lies entirely below 0
     Return (blocked ids like "slice:money_movement/pass_rate", report lines)."""
-    # TODO M5
-    return [], []
+    blocked, lines = [], []
+    bs = spec.get("bootstrap", {})
+    for rule in spec.get("slices", []):
+        name, metric = rule["name"], rule["metric"]
+        ident = f"slice:{name}/{metric}"
+        a, b = per_item(pr, metric, name), per_item(base, metric, name)
+        keys = sorted(a)
+        failed = not keys or a.keys() != b.keys()
+        value = sum(a.values()) / len(a) if a else None
+        note = ""
+        if value is not None and "min" in rule and value < rule["min"]:
+            failed = True
+        if keys and a.keys() == b.keys() and rule.get("no_significant_drop"):
+            d, lo, hi = stats.paired_bootstrap([a[k] for k in keys], [b[k] for k in keys],
+                n_resamples=bs.get("n_resamples", 1000), rng=bs.get("rng", 2027),
+                confidence=bs.get("confidence", 0.95))
+            note = f"Δ {d:+.3f} CI [{lo:+.3f}, {hi:+.3f}]"
+            failed |= hi < 0
+        if failed and rule.get("blocking"):
+            blocked.append(ident)
+        lines.append(f"  {ident}: {value} {note} {'BLOCK' if failed else 'ok'}")
+    return blocked, lines
 
 
 def check(pr: dict, base: dict, spec: dict, base_spec: dict | None = None) -> tuple[list[str], list[str]]:
@@ -72,7 +146,7 @@ def check(pr: dict, base: dict, spec: dict, base_spec: dict | None = None) -> tu
             a, b = per_item(pr, mid), per_item(base, mid)
             keys = sorted(set(a) & set(b))
             d, lo, hi = stats.paired_bootstrap([a[k] for k in keys], [b[k] for k in keys],
-                                               n_resamples=bs.get("n_resamples", 1000), rng=bs.get("rng", 2027))
+                                               n_resamples=bs.get("n_resamples", 1000), rng=bs.get("rng", 2027), confidence=bs.get("confidence", 0.95))
             note = f"Δ {d:+.3f} CI [{lo:+.3f}, {hi:+.3f}]"
             if hi < 0:
                 verdict = "fail"

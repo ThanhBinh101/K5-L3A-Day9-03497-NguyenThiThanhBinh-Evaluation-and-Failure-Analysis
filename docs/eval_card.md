@@ -8,7 +8,7 @@ Eval owner: Nguyễn Thị Thanh Bình — 03497. Ngày chạy: 17/11/2026. Môi
 - Fixed: `E-fixed-20261117-8831`. Regression: `E-seeded_regression-20261117-8831`.
 - Baseline v2: `E-swarm-20261117-1e1a`; SHA `1e1ab462ee9b`; spec 2.0; 28 item × 5 seed.
 - Seeds chính: 11,22,33,44,55; A/A: 66,77,88,99,110.
-- Code/grader fingerprint SHA256 (tên + nội dung src/lab9/*.py theo thứ tự): `2a6356acaa3014014920cea537542eb584c90f70a378751755ba8e8d88532dd6`. Dùng fingerprint vì bản làm bài chưa có commit riêng.
+- Code/grader fingerprint SHA256 (tên + nội dung src/lab9/*.py theo thứ tự): `44b719f00a2dad2d6e9dedbe4b57c5acc90e1804b692d98f0812100133350c41`. Dùng fingerprint vì bản làm bài chưa có commit riêng.
 - Runtime Lab8 sao chép nguyên byte từ checkout repo Day8 tại commit `e11c40dfcace8db18eaa33341ed33ba11909e34e`; không sửa src/lab8.
 - Nhãn tách riêng trong labels_v1.json và labels_v2.json. V1 nguồn lab8_public, v2 thêm instructor_adversarial. Không có nhãn inline.
 

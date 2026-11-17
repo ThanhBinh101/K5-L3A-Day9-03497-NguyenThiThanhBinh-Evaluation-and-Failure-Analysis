@@ -16,6 +16,18 @@ python scripts/verify_day9.py
 
 Report được sinh bằng harness trong `src/reports/`; kết quả kiểm tra đầy đủ ở `src/reports/verification.txt`. Xem `docs/eval_card.md`, `docs/failure_taxonomy.md`, `docs/judge_audit.md`, `docs/trace_case.md`, `docs/PRD_v1.1.md` và `docs/PR_DESCRIPTION.md` để review/nộp bài. Các hướng dẫn overlay bên dưới là đề gốc, không cần thực hiện lại trên repo đã tích hợp này.
 
+## Dashboard Day 9
+
+UI local đọc report thật, cho phép so sánh baseline, chạy lại agent, xem gate/slice, lọc item×seed, tải JSON, đọc trace và học từng bước M5–M7.
+
+```bash
+# Từ gốc repo, sau khi cài môi trường ở trên
+cd src
+../.venv/bin/python -m lab9.dashboard --port 8099
+```
+
+Mở http://127.0.0.1:8099. Nút **Chạy đánh giá** gọi harness thực trên eval set và biến thể đã chọn; report UI lưu riêng dưới `src/reports/dashboard_*.json`, không ghi đè baseline. Màn hình trace dùng bộ bằng chứng cố định trong `docs/trace_evidence.json`, độc lập với bộ chọn biến thể. Dashboard chỉ bind localhost. Bấm Ctrl+C trong terminal để dừng.
+
 ## Bạn sẽ làm gì (13:30–17:00 trên lớp, nộp muộn nhất 23:59 cùng ngày)
 | M | Giờ | Việc | Lệnh kiểm tra |
 |---|---|---|---|
